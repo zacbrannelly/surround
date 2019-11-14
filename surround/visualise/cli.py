@@ -1,8 +1,13 @@
 import argparse
 import signal
-import tornado
+import logging
+import webbrowser
 
+import tornado
 from .visualise_web_app import VisualiseWebApp
+
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
 
 def get_visualise_parser():
     """
@@ -12,8 +17,8 @@ def get_visualise_parser():
     :rtype: :class:`argparse.ArgumentParser`
     """
 
-    parser = argparse.ArgumentParser(
-        description='Visualise the output from a classifier.')
+    parser = argparse.ArgumentParser(prog='viz', description='Visualise the output from a classifier.')
+    parser.add_argument('-p', '--port', type=int, help="Port number to bind server to (default: 45711)", default=45711)
 
     return parser
 
@@ -27,12 +32,16 @@ def execute_visualise_tool(parser, args, extra_args):
     :type args: :class:`argparse.Namespace`
     """
 
+    LOGGER.info("Starting visualisation web app...")
     app = VisualiseWebApp()
-    app.listen(8000)
+    app.listen(args.port)
 
     # Ensure CTRL+C will close the app
     signal.signal(signal.SIGINT, app.signal_handler)
     tornado.ioloop.PeriodicCallback(app.try_exit, 100).start()
+
+    LOGGER.info("Server started at: http://localhost:%i", args.port)
+    webbrowser.open("http://localhost:%i" % args.port)
 
     tornado.ioloop.IOLoop.instance().start()
 
