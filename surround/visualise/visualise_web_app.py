@@ -4,6 +4,7 @@ import tornado.ioloop
 import tornado.web
 
 from .dashboard import Dashboard
+from .metrics_handler import MetricsHandler
 from .upload_handler import UploadHandler
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
@@ -27,6 +28,7 @@ class VisualiseWebApp(tornado.web.Application):
         handlers = [
             (r'/', Dashboard, None),
             (r'/(.+\.js)', MyStaticFileHandler, {"path": os.path.dirname(__file__)}),
+            (r'/metrics', MetricsHandler, None),
             (r'/upload_csv', UploadHandler, None)
         ]
 

@@ -1,4 +1,7 @@
 import io
+import os
+from pathlib import Path
+
 import tornado.web
 import pandas as pd
 from .visualise_classifier import calculate_classifier_metrics
@@ -17,6 +20,7 @@ class UploadHandler(tornado.web.RequestHandler):
 
         # Get the uploaded file as a file-like object
         uploaded_file = self.request.files['file'][0]
+        filename = uploaded_file['filename'].replace(' ', '_')
         uploaded_file = io.BytesIO(uploaded_file['body'])
 
         # Read the uploaded file as CSV
@@ -25,7 +29,7 @@ class UploadHandler(tornado.web.RequestHandler):
         file_contents.fillna(value="UNKNOWN", inplace=True)
 
         if gt_label not in file_contents or pred_label not in file_contents:
-            self.set_status(404)
+            self.set_status(400)
             self.write("Bad request")
             return
 
@@ -33,8 +37,22 @@ class UploadHandler(tornado.web.RequestHandler):
         y_pred = file_contents[pred_label]
 
         if prob_label in file_contents:
-            y_prob = file_contents[prob_label]
             # TODO: Do something with probability column
+            y_prob = file_contents[prob_label]
 
+        # Save the uploaded file for use later by the user
+        export_path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
+        os.makedirs(os.path.dirname(export_path), exist_ok=True)
+        file_contents.to_csv(export_path)
+
+        # Set the filename to a cookie so it can be used in other requests
+        self.set_cookie('ground_label', gt_label)
+        self.set_cookie("predict_label", pred_label)
+        self.set_cookie("probability_label", prob_label)
+        self.set_cookie("separator", sep)
+        self.set_cookie('filename', filename)
+
+        # Generate general metrics and return them
         result = calculate_classifier_metrics(y_true, y_pred)
+
         self.write(result)

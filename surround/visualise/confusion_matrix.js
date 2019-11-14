@@ -48,7 +48,7 @@ function Matrix(options) {
         .rangeBands([0, height]);
 
     var colorMap = d3.scale.linear()
-        .domain([minValue,maxValue])
+        .domain([0, maxValue])
         .range([startColor, endColor]);
 
     var row = svg.selectAll(".row")
@@ -161,7 +161,7 @@ function Matrix(options) {
 
     var y = d3.scale.linear()
     .range([height, 0])
-    .domain([minValue, maxValue]);
+    .domain([0, maxValue]);
 
     var yAxis = d3.svg.axis()
     .scale(y)

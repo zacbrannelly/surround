@@ -21,8 +21,22 @@ function uploadCSV(file, gtLabel, predLabel, probLabel, separator) {
     });
 }
 
-function checkValue(val, def) 
-{
+function checkForSession(app) {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+        if (request.readyState == 4 && request.status == 200) {
+            response = JSON.parse(request.response);
+            // Show metrics, etc.
+            app.content.isActive = true;
+            app.content.report = response;
+        }
+    }
+
+    request.open("GET", "./metrics", true);
+    request.send();
+}
+
+function checkValue(val, def) {
     return val == null || val === "" ? def : val; 
 }
 
@@ -51,6 +65,12 @@ var app = new Vue({
                 cohen_kappa_score: null
             }
         }
+    },
+    mounted: function() {
+        // Check if we have a session in our cookies already, if so load the metrics again.
+        this.$nextTick(function() {
+            checkForSession(this);
+        });
     },
     methods: {
         onFileQueue: function(event) {
