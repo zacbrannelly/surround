@@ -27,7 +27,7 @@ class VisualiseWebApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r'/', Dashboard, None),
-            (r'/(.+\.js)', MyStaticFileHandler, {"path": os.path.dirname(__file__)}),
+            (r'/(.+\.(js|css))', MyStaticFileHandler, {"path": os.path.dirname(__file__)}),
             (r'/metrics', MetricsHandler, None),
             (r'/upload_csv', UploadHandler, None)
         ]

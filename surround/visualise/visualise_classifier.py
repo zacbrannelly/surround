@@ -85,7 +85,7 @@ def calculate_cohen_kappa(confusion_matrix):
     k = safe_div(np.sum(w_mat * confusion_matrix), np.sum(w_mat * expected))
     return 1 - k
 
-def calculate_classifier_metrics(y_true, y_pred):
+def calculate_classifier_metrics(y_true, y_pred, y_prob):
     """
     Calculate the metrics used for the classifier visualiser.
 
@@ -93,6 +93,8 @@ def calculate_classifier_metrics(y_true, y_pred):
     :type y_true: iterable
     :param y_pred: predicted values
     :type y_pred: iterable
+    :param y_prop: probability values
+    :type y_prop: iterable
     :return: report, confusion matrix, accuracy, cohen kappa, classes
     :rtype: dict
     """

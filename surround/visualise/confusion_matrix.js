@@ -4,9 +4,12 @@ function Matrix(options) {
         height = options.height,
         data = options.data,
         container = options.container,
+        legend = options.legend,
         labelsData = options.labels,
         startColor = options.start_color,
-        endColor = options.end_color;
+        endColor = options.end_color,
+        onChangeCallback = options.on_change_callback
+        isEditable = options.is_editable;
 
     var widthLegend = 100;
 
@@ -25,7 +28,7 @@ function Matrix(options) {
     var numcols = data[0].length;
 
     d3.select(container).selectAll("*").remove();
-    d3.select("#legend").selectAll("*").remove();
+    d3.select(legend).selectAll("*").remove();
 
     var svg = d3.select(container).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -51,8 +54,19 @@ function Matrix(options) {
         .domain([0, maxValue])
         .range([startColor, endColor]);
 
+    var index = 0;
+    const transformedData = [];
+    data.forEach(r => {
+        const newRow = [];
+        r.forEach(c => {
+            newRow.push({id: index, value: c});
+            index++;
+        })
+        transformedData.push(newRow);
+    });
+
     var row = svg.selectAll(".row")
-        .data(data)
+        .data(transformedData)
         .enter().append("g")
         .attr("class", "row")
         .attr("transform", function(d, i) { return "translate(0," + y(i) + ")"; });
@@ -68,13 +82,28 @@ function Matrix(options) {
         .attr("height", y.rangeBand())
         .style("stroke-width", 0);
 
-    cell.append("text")
-        .attr("dy", ".32em")
-        .attr("x", x.rangeBand() / 2)
-        .attr("y", y.rangeBand() / 2)
-        .attr("text-anchor", "middle")
-        .style("fill", function(d, i) { return d >= maxValue/2 ? 'white' : 'black'; })
-        .text(function(d, i) { return d; });
+    if (isEditable) {
+        cell.append("foreignObject")
+            .attr("x", x.rangeBand() / 2 - ((0.7 * x.rangeBand()) / 2))
+            .attr("y", y.rangeBand() / 2 - 14)
+            .attr("width", 0.7 * x.rangeBand())
+            .attr("height", 40)
+            .append("xhtml:input")
+            .attr("type", "number")
+            .attr("class", "input")
+            .attr("style", "text-align: center")
+            .on("change", function(d, i) { onChangeCallback(d.id, this); })
+            .attr("value", function(d, i) { return d.value; })
+    }
+    else {
+        cell.append("text")
+            .attr("dy", ".32em")
+            .attr("x", x.rangeBand() / 2)
+            .attr("y", y.rangeBand() / 2)
+            .attr("text-anchor", "middle")
+            .style("fill", function(d, i) { return d.value >= maxValue/2 ? 'white' : 'black'; })
+            .text(function(d, i) { return d.value; });
+    }
 
     row.selectAll(".cell")
         .data(function(d, i) { return data[i]; })
@@ -126,7 +155,7 @@ function Matrix(options) {
         .attr("text-anchor", "end")
         .text(function(d, i) { return d; });
 
-    var key = d3.select("#legend")
+    var key = d3.select(legend)
     .append("svg")
     .attr("width", widthLegend)
     .attr("height", height + margin.top + margin.bottom);
@@ -174,38 +203,79 @@ function Matrix(options) {
 }
 
 var confusionMatrixComp = {
-    props: ['report'],
+    props: {
+        report: Object,
+        name: {
+            type: String,
+            default: "matrix"
+        },
+        isEditable: {
+            type: Boolean,
+            default: false
+        },
+        onNewMatrix: {
+            type: Function,
+            default: function() { }
+        }
+    },
     watch: {
         report: {
             handler: function() {
                 Matrix({
-                    container : '#container',
+                    container : '#' + this.containerName,
+                    legend    : '#' + this.legendName,
                     data      : this.report.confusion_matrix,
                     labels    : this.report.classes,
                     start_color : '#ffffff',
                     end_color : '#0072ff',
-                    width: 450,
-                    height: 450
+                    is_editable: this.isEditable,
+                    on_change_callback: this.onChange,
+                    width: 400,
+                    height: 400
                 });
             },
             deep: true
         }
     },
+    methods: {
+        onChange(index, element) {
+            const newValue = Number.parseInt(element.value);
+            const matrix = this.report.confusion_matrix;
+            const numCols = matrix[0].length;
+            
+            const y = Math.floor(index / numCols);
+            const x = index - numCols * y
+
+            matrix[y][x] = newValue;
+            this.onNewMatrix(matrix);
+        }
+    },
+    computed: {
+        containerName: function() {
+            return "container-" + this.name;
+        },
+        legendName: function() {
+            return "legend-" + this.name;
+        }
+    },
     mounted: function() {
         Matrix({
-            container : '#container',
+            container : '#' + this.containerName,
+            legend    : '#' + this.legendName,
             data      : this.report.confusion_matrix,
             labels    : this.report.classes,
             start_color : '#ffffff',
             end_color : '#0072ff',
-            width: 450,
-            height: 450
+            is_editable: this.isEditable,
+            on_change_callback: this.onChange,
+            width: 400,
+            height: 400
         });
     },
     template: `
         <div>
-            <div style="float: left;" id="container"></div>
-            <div style="float: left;" id="legend"></div>
+            <div style="float: left;" :id="containerName"></div>
+            <div style="float: left;" :id="legendName"></div>
         </div>
     `
 }

@@ -35,10 +35,7 @@ class UploadHandler(tornado.web.RequestHandler):
 
         y_true = file_contents[gt_label]
         y_pred = file_contents[pred_label]
-
-        if prob_label in file_contents:
-            # TODO: Do something with probability column
-            y_prob = file_contents[prob_label]
+        y_prob = file_contents[prob_label] if prob_label in file_contents else None
 
         # Save the uploaded file for use later by the user
         export_path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
@@ -53,6 +50,6 @@ class UploadHandler(tornado.web.RequestHandler):
         self.set_cookie('filename', filename)
 
         # Generate general metrics and return them
-        result = calculate_classifier_metrics(y_true, y_pred)
+        result = calculate_classifier_metrics(y_true, y_pred, y_prob)
 
         self.write(result)
